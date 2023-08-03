@@ -18,3 +18,11 @@ $base0F: #D27E99;
 Widget {
   color: $base05;
 }
+
+GraphViewer {
+  background: $base00;
+}
+
+Connector.test Line {
+  color: $base08;
+}
