@@ -3,7 +3,6 @@ from dataclasses import dataclass
 
 from textual.geometry import Offset
 from textual.widget import Widget
-from textual.widgets import Static
 
 Point = Offset
 
@@ -77,7 +76,6 @@ class VerticalLine(_Line):
         self.styles.width = 1
         self.styles.height = self.length
         return "│" * self.length
-        # return ":" * self.length
 
 
 class HorizontalLine(_Line):
@@ -89,7 +87,6 @@ class HorizontalLine(_Line):
         self.styles.height = 1
         self.styles.width = self.length
         return "─" * self.length
-        # return "." * self.length
 
 
 def comparison_map(a: int, b: int):
@@ -104,7 +101,7 @@ class Direction(enum.Enum):
     V = enum.auto()
     H = enum.auto()
 
-    def other(self):
+    def shift(self):
         if self == Direction.H:
             return Direction.V
         return Direction.H
@@ -120,6 +117,23 @@ class Orientation(enum.Enum):
     NW = enum.auto()
     SE = enum.auto()
     SW = enum.auto()
+
+    def flip(self, direction: Direction):
+        map = {
+            Direction.V: {
+                Orientation.NE: Orientation.SE,
+                Orientation.NW: Orientation.SW,
+                Orientation.SE: Orientation.NE,
+                Orientation.SW: Orientation.NW,
+            },
+            Direction.H: {
+                Orientation.NE: Orientation.NW,
+                Orientation.NW: Orientation.NE,
+                Orientation.SE: Orientation.SW,
+                Orientation.SW: Orientation.SE,
+            },
+        }
+        return map[direction][self]
 
 
 @dataclass
@@ -200,18 +214,15 @@ class Connector:
 
         add_segment(Terminal(self.start, TerminalType.START))
 
-        point = self.start
         start = self.start
         if self.direction == Direction.H:
             start += Point(self.rightwards, 0)
         else:
             start += Point(0, self.downwards)
+        end = self.end
 
         is_straight = not self.downwards or not self.rightwards
         if is_straight:
-            end = self.end
-            # end -= Point(self.rightwards, self.downwards)
-
             length = int(start.get_distance_to(end))
             if length >= 1:
                 if self.direction == Direction.H:
@@ -222,7 +233,6 @@ class Connector:
             add_segment(Terminal(self.end, TerminalType.END))
             return
 
-        end = self.end
         if self.direction == Direction.H:
             length = abs((end.x - start.x) // 2)
             sign = self.rightwards == 1
@@ -235,9 +245,14 @@ class Connector:
             start += Point(self.rightwards * length, 0)
         else:
             start += Point(0, self.downwards * length)
-        add_segment(Elbow(start, Orientation.SW))
+        orientation = Orientation.NE
+        if self.rightwards == 1:
+            orientation = orientation.flip(Direction.H)
+            if self.downwards == 1:
+                orientation = orientation.flip(Direction.V)
+        add_segment(Elbow(start, orientation))
 
-        if self.direction.other() == Direction.H:
+        if self.direction.shift() == Direction.H:
             step_length = abs(end.x - start.x) - 1
             start += Point(self.rightwards, 0)
             sign = self.rightwards == 1
@@ -245,13 +260,18 @@ class Connector:
             step_length = abs(end.y - start.y) - 1
             start += Point(0, self.downwards)
             sign = self.downwards == 1
-        add_segment(Line(start, self.direction.other(), step_length, sign))
+        add_segment(Line(start, self.direction.shift(), step_length, sign))
 
-        if self.direction.other() == Direction.H:
+        if self.direction.shift() == Direction.H:
             start += Point(self.rightwards * step_length, 0)
         else:
             start += Point(0, self.downwards * step_length)
-        add_segment(Elbow(start, Orientation.NE))
+        orientation = Orientation.SW
+        if self.rightwards == 1:
+            orientation = orientation.flip(Direction.H)
+            if self.downwards == 1:
+                orientation = orientation.flip(Direction.V)
+        add_segment(Elbow(start, orientation))
 
         if self.direction == Direction.H:
             length = end.x - start.x - 1
@@ -265,11 +285,3 @@ class Connector:
         add_segment(Line(start, self.direction, length, sign))
 
         add_segment(Terminal(self.end, TerminalType.END))
-
-    def _inc(self, point: Point):
-        x, y = point
-        if self.direction == Direction.H:
-            x += self.rightwards
-        else:
-            y += self.downwards
-        return Point(x, y)
