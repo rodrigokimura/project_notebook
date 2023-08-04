@@ -5,7 +5,7 @@ from textual.layouts.horizontal import HorizontalLayout
 from textual.layouts.vertical import VerticalLayout
 from textual.widget import Widget
 
-from connectors import Connector, Point
+from connectors import Point, _Connector
 from layouts import FreeLayout
 
 
@@ -24,7 +24,7 @@ class GraphViewer(Widget):
         classes: str | None = None,
         disabled: bool = False,
         nodes: list[Node] | None = None,
-        connectors: list[Connector] | None = None,
+        connectors: list[_Connector] | None = None,
     ) -> None:
         super().__init__(
             *children, name=name, id=id, classes=classes, disabled=disabled
@@ -86,6 +86,10 @@ def make_nodes():
 
 
 def make_connectors():
-    conn1 = Connector(start=Point(5, 5), end=Point(15, 15))
-    conn2 = Connector(start=Point(20, 30), end=Point(10, 23), classes="test")
-    return list(locals().values())
+    conn1 = _Connector(start=Point(5, 5), end=Point(20, 20))
+    dx, dy = 1, 1
+    conn2 = _Connector(
+        start=Point(5 + dx, 5 + dy), end=Point(20 + dx, 20 + dy), classes="test"
+    )
+    # return [conn1]
+    return [conn1, conn2]

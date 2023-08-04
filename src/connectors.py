@@ -14,7 +14,7 @@ class Direction(str, enum.Enum):
     VERTICAL = "vertical"
 
 
-class Connector(Widget):
+class _Connector(Widget):
     DEFAULT_CSS = """
     Connector {
         height: auto;
@@ -24,6 +24,7 @@ class Connector(Widget):
         background: white 0%;
     }
     """
+
     def __init__(
         self,
         *children: Widget,
@@ -59,6 +60,7 @@ class Connector(Widget):
         self.styles.offset = (region.x, region.y)
         self.styles.width = region.width + steps
         self.styles.height = region.height + steps
+        self.styles.opacity = 0.7
 
         direction: Direction = Direction.VERTICAL
         # direction: Direction = Direction.HORIZONTAL

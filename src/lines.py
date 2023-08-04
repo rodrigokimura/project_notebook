@@ -3,12 +3,13 @@ from textual.widget import Widget
 from geometry import Point
 
 
-class Line(Widget):
+class _Line(Widget):
     DEFAULT_CSS = """
     Line {
         height: 1;
         width: 1;
         border: none;
+        background: white 0%;
     }
     """
 
@@ -29,7 +30,7 @@ class Line(Widget):
         self.length = length
 
 
-class VerticalLine(Line):
+class VerticalLine(_Line):
     def render(self):
         self.styles.offset = self.position.x, self.position.y
         self.styles.width = 1
@@ -38,7 +39,7 @@ class VerticalLine(Line):
         # return ":" * self.length
 
 
-class HorizontalLine(Line):
+class HorizontalLine(_Line):
     def render(self):
         self.styles.offset = self.position.x, self.position.y
         self.styles.height = 1
