@@ -109,7 +109,10 @@ class Direction(enum.Enum):
 
 class TerminalType(enum.Enum):
     START = enum.auto()
-    END = enum.auto()
+    UP = enum.auto()
+    DOWN = enum.auto()
+    LEFT = enum.auto()
+    RIGHT = enum.auto()
 
 
 class Orientation(enum.Enum):
@@ -146,8 +149,11 @@ class Segment:
 @dataclass
 class Terminal(Segment):
     char_map = {
-        TerminalType.START: "+",
-        TerminalType.END: "*",
+        TerminalType.START: "⭘",
+        TerminalType.UP: "▲",
+        TerminalType.DOWN: "▼",
+        TerminalType.LEFT: "◀",
+        TerminalType.RIGHT: "▶",
     }
 
     point: Point
@@ -207,81 +213,136 @@ class Connector:
         self._build()
 
     def _build(self):
-        add_segment = self.segments.append
         is_null = self.start.get_distance_to(self.end) == 0
         if is_null:
             return
 
-        add_segment(Terminal(self.start, TerminalType.START))
-
-        start = self.start
-        if self.direction == Direction.H:
-            start += Point(self.rightwards, 0)
-        else:
-            start += Point(0, self.downwards)
-        end = self.end
+        cursor = self.start
+        cursor = self._add_start_terminal(cursor)
 
         is_straight = not self.downwards or not self.rightwards
         if is_straight:
-            length = int(start.get_distance_to(end))
-            if length >= 1:
-                if self.direction == Direction.H:
-                    sign = self.rightwards == 1
-                else:
-                    sign = self.downwards == 1
-                add_segment(Line(start, self.direction, length, sign))
-            add_segment(Terminal(self.end, TerminalType.END))
-            return
+            cursor = self._add_straight_body(cursor)
+        else:
+            cursor = self._add_first_body_half(cursor)
 
+            cursor = self._add_first_elbow(cursor)
+            cursor = self._add_step(cursor)
+            cursor = self._add_second_elbow(cursor)
+
+            cursor = self._add_second_body_half(cursor)
+
+        assert self.end == cursor
+        cursor = self._add_end_terminal(cursor)
+
+    def _add_segment(self, segment: Segment):
+        self.segments.append(segment)
+
+    def _add_start_terminal(self, cursor: Point):
+        self._add_segment(Terminal(cursor, TerminalType.START))
         if self.direction == Direction.H:
-            length = abs((end.x - start.x) // 2)
+            cursor += Point(self.rightwards, 0)
+        else:
+            cursor += Point(0, self.downwards)
+        return cursor
+
+    def _add_straight_body(self, cursor: Point):
+        end = self.end
+        length = int(cursor.get_distance_to(end))
+        if self.direction == Direction.H:
             sign = self.rightwards == 1
         else:
-            length = abs((end.y - start.y) // 2)
             sign = self.downwards == 1
-        add_segment(Line(start, self.direction, length, sign))
-
+        if length >= 1:
+            self._add_segment(Line(cursor, self.direction, length, sign))
         if self.direction == Direction.H:
-            start += Point(self.rightwards * length, 0)
+            cursor += Point(self.rightwards * length, 0)
         else:
-            start += Point(0, self.downwards * length)
+            cursor += Point(0, self.downwards * length)
+        return cursor
+
+    def _add_first_body_half(self, cursor: Point):
+        end = self.end
+        if self.direction == Direction.H:
+            length = abs((end.x - cursor.x) // 2)
+            sign = self.rightwards == 1
+        else:
+            length = abs((end.y - cursor.y) // 2)
+            sign = self.downwards == 1
+        self._add_segment(Line(cursor, self.direction, length, sign))
+        if self.direction == Direction.H:
+            cursor += Point(self.rightwards * length, 0)
+        else:
+            cursor += Point(0, self.downwards * length)
+        return cursor
+
+    def _add_first_elbow(self, cursor: Point):
         orientation = Orientation.NE
         if self.rightwards == 1:
             orientation = orientation.flip(Direction.H)
             if self.downwards == 1:
                 orientation = orientation.flip(Direction.V)
-        add_segment(Elbow(start, orientation))
-
+        self._add_segment(Elbow(cursor, orientation))
         if self.direction.shift() == Direction.H:
-            step_length = abs(end.x - start.x) - 1
-            start += Point(self.rightwards, 0)
+            cursor += Point(self.rightwards, 0)
+        else:
+            cursor += Point(0, self.downwards)
+        return cursor
+
+    def _add_step(self, cursor: Point):
+        end = self.end
+        if self.direction.shift() == Direction.H:
+            length = abs(end.x - cursor.x)
             sign = self.rightwards == 1
         else:
-            step_length = abs(end.y - start.y) - 1
-            start += Point(0, self.downwards)
+            length = abs(end.y - cursor.y)
             sign = self.downwards == 1
-        add_segment(Line(start, self.direction.shift(), step_length, sign))
+        self._add_segment(Line(cursor, self.direction.shift(), length, sign))
 
         if self.direction.shift() == Direction.H:
-            start += Point(self.rightwards * step_length, 0)
+            cursor += Point(self.rightwards * length, 0)
         else:
-            start += Point(0, self.downwards * step_length)
+            cursor += Point(0, self.downwards * length)
+        return cursor
+
+    def _add_second_elbow(self, cursor: Point):
         orientation = Orientation.SW
         if self.rightwards == 1:
             orientation = orientation.flip(Direction.H)
             if self.downwards == 1:
                 orientation = orientation.flip(Direction.V)
-        add_segment(Elbow(start, orientation))
-
+        self._add_segment(Elbow(cursor, orientation))
         if self.direction == Direction.H:
-            length = end.x - start.x - 1
-            sign = self.rightwards == 1
-            start += Point(self.rightwards, 0)
+            cursor += Point(self.rightwards, 0)
         else:
-            length = end.y - start.y - 1
+            cursor += Point(0, self.downwards)
+        return cursor
+
+    def _add_second_body_half(self, cursor: Point):
+        end = self.end
+        if self.direction == Direction.H:
+            length = end.x - cursor.x
+            sign = self.rightwards == 1
+        else:
+            length = end.y - cursor.y
             sign = self.downwards == 1
-            start += Point(0, self.downwards)
+        self._add_segment(Line(cursor, self.direction, length, sign))
+        if self.direction == Direction.H:
+            cursor += Point(self.rightwards * length, 0)
+        else:
+            cursor += Point(0, self.downwards * length)
+        return cursor
 
-        add_segment(Line(start, self.direction, length, sign))
-
-        add_segment(Terminal(self.end, TerminalType.END))
+    def _add_end_terminal(self, cursor: Point):
+        if self.direction == Direction.H:
+            sign = self.rightwards == 1
+            terminal_type = TerminalType.RIGHT if sign else TerminalType.LEFT
+        else:
+            sign = self.downwards == 1
+            terminal_type = TerminalType.DOWN if sign else TerminalType.UP
+        self._add_segment(Terminal(cursor, terminal_type))
+        if self.direction == Direction.H:
+            cursor += Point(self.rightwards, 0)
+        else:
+            cursor += Point(0, self.downwards)
+        return cursor

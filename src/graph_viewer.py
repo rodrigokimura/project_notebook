@@ -79,9 +79,9 @@ class Node(Widget):
 
 def make_nodes():
     node_1 = Node(name="test 1", position=(2, 0))
-    # node_2 = Node(name="test2", position=(0, 3))
-    # node_3 = Node(name="test3", position=(10, 10))
-    # node_4 = Node(name="test4", position=(12, 11))
+    node_2 = Node(name="test2", position=(0, 3))
+    node_3 = Node(name="test3", position=(10, 10))
+    node_4 = Node(name="test4", position=(12, 11))
     return list(locals().values())
 
 
@@ -92,10 +92,4 @@ def make_connectors():
     conn4 = Connector(start=Point(10, 20), end=Point(10, 15))
     conn5 = Connector(start=Point(7, 2), end=Point(7, 20))
     conn6 = Connector(start=Point(13, 2), end=Point(20, 20))
-    dx, dy = 1, 1
-    connx = Connector(
-        start=Point(5 + dx, 5 + dy),
-        end=Point(20 + dx, 20 + dy),
-    )
-    # return [conn1]
     return [conn1, conn2, conn3, conn4, conn5, conn6]
