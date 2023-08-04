@@ -142,7 +142,6 @@ class Terminal(Segment):
     @property
     def widget(self):
         return _Char(position=self.point, char=self.char_map[self.terminal_type])
-        return Static("asdf", classes="terminal")
 
 
 @dataclass
@@ -174,6 +173,10 @@ class Elbow(Segment):
     }
     point: Point
     orientation: Orientation
+
+    @property
+    def widget(self):
+        return _Char(position=self.point, char=self.char_map[self.orientation])
 
 
 class Connector:
@@ -219,14 +222,47 @@ class Connector:
             add_segment(Terminal(self.end, TerminalType.END))
             return
 
-        add_segment(Line(self.start + Point(), self.direction, 1, True))
+        end = self.end
+        if self.direction == Direction.H:
+            length = abs((end.x - start.x) // 2)
+            sign = self.rightwards == 1
+        else:
+            length = abs((end.y - start.y) // 2)
+            sign = self.downwards == 1
+        add_segment(Line(start, self.direction, length, sign))
 
-        point = self._inc(self.start)
-        add_segment(Elbow(point, Orientation.SW))
+        if self.direction == Direction.H:
+            start += Point(self.rightwards * length, 0)
+        else:
+            start += Point(0, self.downwards * length)
+        add_segment(Elbow(start, Orientation.SW))
 
-        add_segment(Line(self.start, self.direction.other(), 1, True))
-        add_segment(Elbow(self.start, Orientation.SW))
-        add_segment(Line(self.start, self.direction, 1, True))
+        if self.direction.other() == Direction.H:
+            step_length = abs(end.x - start.x) - 1
+            start += Point(self.rightwards, 0)
+            sign = self.rightwards == 1
+        else:
+            step_length = abs(end.y - start.y) - 1
+            start += Point(0, self.downwards)
+            sign = self.downwards == 1
+        add_segment(Line(start, self.direction.other(), step_length, sign))
+
+        if self.direction.other() == Direction.H:
+            start += Point(self.rightwards * step_length, 0)
+        else:
+            start += Point(0, self.downwards * step_length)
+        add_segment(Elbow(start, Orientation.NE))
+
+        if self.direction == Direction.H:
+            length = end.x - start.x - 1
+            sign = self.rightwards == 1
+            start += Point(self.rightwards, 0)
+        else:
+            length = end.y - start.y - 1
+            sign = self.downwards == 1
+            start += Point(0, self.downwards)
+
+        add_segment(Line(start, self.direction, length, sign))
 
         add_segment(Terminal(self.end, TerminalType.END))
 

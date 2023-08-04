@@ -90,10 +90,12 @@ def make_connectors():
     conn2 = Connector(start=Point(20, 10), end=Point(5, 10))
     conn3 = Connector(start=Point(5, 15), end=Point(5, 20))
     conn4 = Connector(start=Point(10, 20), end=Point(10, 15))
+    conn5 = Connector(start=Point(7, 2), end=Point(7, 20))
+    conn6 = Connector(start=Point(13, 2), end=Point(20, 20))
     dx, dy = 1, 1
     connx = Connector(
         start=Point(5 + dx, 5 + dy),
         end=Point(20 + dx, 20 + dy),
     )
     # return [conn1]
-    return [conn1, conn2, conn3, conn4]
+    return [conn1, conn2, conn3, conn4, conn5, conn6]
