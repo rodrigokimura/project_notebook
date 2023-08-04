@@ -5,7 +5,7 @@ from textual.binding import Binding, BindingType
 from textual.screen import Screen
 from textual.widgets import Footer, Header, LoadingIndicator
 
-from graph_viewer import GraphViewer, make_connectors, make_nodes
+from graph_viewer import GraphViewer, make_nodes
 
 
 class LoadingScreen(Screen):
@@ -24,7 +24,7 @@ class NotebookApp(App[None]):
         self._setup()
 
         yield Header(show_clock=True)
-        yield GraphViewer(nodes=make_nodes(), connectors=make_connectors())
+        yield GraphViewer(nodes=make_nodes())
         yield Footer()
 
     def action_toggledark(self) -> None:

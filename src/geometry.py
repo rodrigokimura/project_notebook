@@ -2,8 +2,94 @@ import enum
 from dataclasses import dataclass
 
 from textual.geometry import Offset
+from textual.widget import Widget
+from textual.widgets import Static
 
 Point = Offset
+
+
+class _Line(Widget):
+    DEFAULT_CSS = """
+    _Line {
+        height: 1;
+        width: 1;
+        border: none;
+        background: white 0%;
+    }
+    """
+
+    def __init__(
+        self,
+        *children: Widget,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+        disabled: bool = False,
+        position: Point = Point(0, 0),
+        length: int = 1,
+        sign: bool = True,
+    ) -> None:
+        super().__init__(
+            *children, name=name, id=id, classes=classes, disabled=disabled
+        )
+        self.position = position
+        self.length = length
+        self.sign = sign
+
+
+class _Char(Widget):
+    DEFAULT_CSS = """
+    _Char {
+        height: 1;
+        width: 1;
+        border: none;
+        background: white 0%;
+    }
+    """
+
+    def __init__(
+        self,
+        *children: Widget,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+        disabled: bool = False,
+        position: Point = Point(0, 0),
+        char: str = ".",
+    ) -> None:
+        super().__init__(
+            *children, name=name, id=id, classes=classes, disabled=disabled
+        )
+        self.position = position
+        self.char = char
+
+    def render(self):
+        self.styles.offset = self.position.x, self.position.y
+        return self.char
+
+
+class VerticalLine(_Line):
+    def render(self):
+        x, y = self.position.x, self.position.y
+        if not self.sign:
+            y -= self.length - 1
+        self.styles.offset = x, y
+        self.styles.width = 1
+        self.styles.height = self.length
+        return "│" * self.length
+        # return ":" * self.length
+
+
+class HorizontalLine(_Line):
+    def render(self):
+        x, y = self.position.x, self.position.y
+        if not self.sign:
+            x -= self.length - 1
+        self.styles.offset = x, y
+        self.styles.height = 1
+        self.styles.width = self.length
+        return "─" * self.length
+        # return "." * self.length
 
 
 def comparison_map(a: int, b: int):
@@ -38,7 +124,9 @@ class Orientation(enum.Enum):
 
 @dataclass
 class Segment:
-    ...
+    @property
+    def widget(self):
+        return Widget()
 
 
 @dataclass
@@ -51,18 +139,29 @@ class Terminal(Segment):
     point: Point
     terminal_type: TerminalType
 
+    @property
+    def widget(self):
+        return _Char(position=self.point, char=self.char_map[self.terminal_type])
+        return Static("asdf", classes="terminal")
+
 
 @dataclass
 class Line(Segment):
-    char_map = {
-        Direction.V: "|",
-        Direction.H: "─",
+    widget_map = {
+        Direction.V: VerticalLine,
+        Direction.H: HorizontalLine,
     }
 
     point: Point
     direction: Direction
     length: int
     sign: bool
+
+    @property
+    def widget(self):
+        return self.widget_map[self.direction](
+            position=self.point, length=self.length, sign=self.sign
+        )
 
 
 @dataclass
@@ -99,11 +198,14 @@ class Connector:
         add_segment(Terminal(self.start, TerminalType.START))
 
         point = self.start
+        start = self.start
+        if self.direction == Direction.H:
+            start += Point(self.rightwards, 0)
+        else:
+            start += Point(0, self.downwards)
 
         is_straight = not self.downwards or not self.rightwards
         if is_straight:
-            start = self.start
-            start += Point(self.rightwards, self.downwards)
             end = self.end
             # end -= Point(self.rightwards, self.downwards)
 

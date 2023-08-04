@@ -12,4 +12,4 @@ lint:
 	@pipenv run isort .
 
 test:
-	@pipenv run pytest
+	@pipenv run pytest . -s

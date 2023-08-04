@@ -5,7 +5,7 @@ from geometry import Point
 
 class _Line(Widget):
     DEFAULT_CSS = """
-    Line {
+    _Line {
         height: 1;
         width: 1;
         border: none;

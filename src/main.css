@@ -26,3 +26,8 @@ GraphViewer {
 Connector.test Line {
   color: $base08;
 }
+
+Static.terminal {
+    width: 1;
+    height: 1;
+}
